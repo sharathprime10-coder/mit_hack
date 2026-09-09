@@ -1,0 +1,27 @@
+{
+  "total_records_analyzed": 350,
+  "invalid_records_count": 23,
+  "min_predicted_reference_parameter": 9.5747,
+  "max_predicted_reference_parameter": 62.3798,
+  "avg_predicted_reference_parameter": 26.2523,
+  "top_3_attention_test_ids": [
+    "TST-0258",
+    "TST-0178",
+    "TST-0142"
+  ],
+  "top_3_highest_predicted_parameter_ids": [
+    "TST-0047",
+    "TST-0107",
+    "TST-0084"
+  ],
+  "feature_importance": {
+    "Load_Current_A": 6.347991,
+    "Sensor_S2": 2.53479,
+    "Ambient_Temperature_C": 1.224001,
+    "Applied_Voltage_kV": 0.405628,
+    "Sensor_S1": 0.223178,
+    "Test_Duration_min": 0.122987,
+    "Sensor_S3": 0.065754
+  },
+  "algorithmic_explanation": "A balanced supervised XGBoost classifier identifies invalid records while retaining missingness indicators. Gaussian Process Regression is trained only on engineer-labelled valid records and supplies uncertainty for attention ranking. An XGBoost regressor is retained as an extrapolation guardrail. Sensor_S4 is removed when its valid-record correlation is negligible."
+}
