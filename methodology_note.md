@@ -1,5 +1,5 @@
 # CPRI Data Challenge — Methodology Note
-## Team Samarth | BMS College of Engineering
+## Team Anveshan | BMS College of Engineering
 
 ---
 

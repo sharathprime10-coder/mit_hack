@@ -1,5 +1,5 @@
 """
-CPRI Data Challenge - Team Samarth
+CPRI Data Challenge - Team Anveshan
 Reproducible two-stage modelling pipeline.
 
 Run from any directory:
@@ -218,7 +218,7 @@ def export_artifacts(
     submission["Predicted_Reference_Parameter"] = submission[
         "Predicted_Reference_Parameter"
     ].round(4)
-    submission.to_csv(output_dir / "Team_Samarth.csv", index=False)
+    submission.to_csv(output_dir / "Team_Anveshan.csv", index=False)
 
     attention = result.nlargest(3, "Attention_Score")["Test_ID"].tolist()
     highest_risk = result.nlargest(3, "Predicted_Reference_Parameter")["Test_ID"].tolist()
@@ -244,7 +244,7 @@ def export_artifacts(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the Team Samarth CPRI pipeline.")
+    parser = argparse.ArgumentParser(description="Run the Team Anveshan CPRI pipeline.")
     parser.add_argument("--data-dir", type=Path, default=BASE_DIR)
     parser.add_argument("--output-dir", type=Path, default=BASE_DIR)
     args = parser.parse_args()
@@ -264,7 +264,7 @@ def main() -> None:
     )
     importance = generate_shap(fallback, result, features)
     export_artifacts(result, importance, args.output_dir)
-    print(f"[done] wrote Team_Samarth.csv and summary.json to {args.output_dir}")
+    print(f"[done] wrote Team_Anveshan.csv and summary.json to {args.output_dir}")
 
 
 if __name__ == "__main__":

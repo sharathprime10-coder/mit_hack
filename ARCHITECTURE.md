@@ -31,7 +31,7 @@ flowchart TD
     K --> L
     I --> M[Submission row]
     L --> M
-    M --> N[Team_Samarth.csv]
+    M --> N[Team_Anveshan.csv]
     L --> O[Uncertainty ranking]
     H --> P[Validity metrics]
     K --> Q[SHAP feature importance]
@@ -89,4 +89,4 @@ review priority and thermal value distinct.
 - Medians are calculated from training data and reused for test data.
 - Random seeds are fixed for repeatable model fitting.
 - The script fails early when required files, columns, or labels are invalid.
-- `summary.json` is intended for review; `Team_Samarth.csv` is the submission artifact.
+- `summary.json` is intended for review; `Team_Anveshan.csv` is the submission artifact.
