@@ -36,6 +36,10 @@ run from another location:
 python C:\path\to\mit_hack\pipeline.py --data-dir C:\path\to\mit_hack
 ```
 
+The dependency versions are pinned to the versions used to generate the
+submitted artifacts. This avoids model-output drift caused by changes in
+XGBoost or scikit-learn.
+
 ## Processing design
 
 1. Validate the input schema and labels.
