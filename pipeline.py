@@ -218,7 +218,7 @@ def export_artifacts(
     submission["Predicted_Reference_Parameter"] = submission[
         "Predicted_Reference_Parameter"
     ].round(4)
-    submission.to_csv(output_dir / "Team_Anveshan.csv", index=False)
+    submission.to_csv(output_dir / "Anveshan.csv", index=False)
 
     attention = result.nlargest(3, "Attention_Score")["Test_ID"].tolist()
     highest_risk = result.nlargest(3, "Predicted_Reference_Parameter")["Test_ID"].tolist()
@@ -264,7 +264,7 @@ def main() -> None:
     )
     importance = generate_shap(fallback, result, features)
     export_artifacts(result, importance, args.output_dir)
-    print(f"[done] wrote Team_Anveshan.csv and summary.json to {args.output_dir}")
+    print(f"[done] wrote Anveshan.csv and summary.json to {args.output_dir}")
 
 
 if __name__ == "__main__":
