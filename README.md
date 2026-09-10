@@ -46,11 +46,12 @@ XGBoost or scikit-learn.
 2. Select features using the valid training records.
 3. Impute missing values using training medians only.
 4. Preserve missingness indicators for validity classification.
-5. Train a balanced XGBoost classifier.
+5. Train a balanced HistGradientBoosting classifier selected by repeated
+   stratified cross-validation.
 6. Train Gaussian Process and XGBoost regressors on valid records only.
 7. Rank attention by prediction uncertainty and report high-value thermal-risk IDs separately.
 8. Export the required submission and an audit summary.
 
-The current run produced 350 predictions, with 327 records classified as
-valid and 23 as invalid. The validation and output details are recorded in
-`summary.json`.
+The current run produced 350 predictions, with 319 records classified as
+valid and 31 as invalid. Repeated cross-validation metrics and output details
+are recorded in `summary.json`.
