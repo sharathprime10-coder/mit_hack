@@ -76,3 +76,29 @@ run:
 5. **Review and learn:** route invalid or high-uncertainty records to an
    engineer, persist outcomes, and recalibrate only after new labelled data
    passes a documented validation process.
+
+## 6. Running the supplied code
+
+The program uses Python 3 and the following pinned packages:
+
+```text
+numpy==2.5.2
+pandas==3.0.5
+scikit-learn==1.9.0
+xgboost==3.4.1
+shap==0.52.0
+```
+
+Create a virtual environment and install them with:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install numpy==2.5.2 pandas==3.0.5 scikit-learn==1.9.0 xgboost==3.4.1 shap==0.52.0
+python pipeline.py
+```
+
+The supplied `training_data.csv` and `test_data.csv` must be placed beside
+`pipeline.py` before running it. The script then creates `Anveshan.csv` and
+`summary.json`. The repository also contains the same dependency list in
+`requirements.txt`.
