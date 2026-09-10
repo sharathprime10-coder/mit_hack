@@ -20,9 +20,9 @@ import numpy as np
 import pandas as pd
 import shap
 import xgboost as xgb
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
-from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore")
@@ -118,7 +118,10 @@ def train_validity_classifier(
         random_state=42,
     )
     model.fit(x, y)
-    print("[validity] selected HistGradientBoostingClassifier from repeated stratified CV")
+    print(
+        "[validity] selected HistGradientBoostingClassifier "
+        "from repeated stratified CV"
+    )
     return model
 
 
@@ -203,7 +206,9 @@ def export_artifacts(
 ) -> None:
     """Write the challenge submission and a judge-friendly audit summary."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    submission = result[["Test_ID", "Predicted_Reference_Parameter", "Validity_Label"]].copy()
+    submission = result[
+        ["Test_ID", "Predicted_Reference_Parameter", "Validity_Label"]
+    ].copy()
     submission.columns = ["Test_ID", "Predicted_Reference_Parameter", "Valid / Invalid"]
     submission["Predicted_Reference_Parameter"] = submission[
         "Predicted_Reference_Parameter"
@@ -215,14 +220,24 @@ def export_artifacts(
     summary = {
         "total_records_analyzed": int(len(result)),
         "invalid_records_count": int(result["Validity_Label"].eq("Invalid").sum()),
-        "min_predicted_reference_parameter": round(float(result["Predicted_Reference_Parameter"].min()), 4),
-        "max_predicted_reference_parameter": round(float(result["Predicted_Reference_Parameter"].max()), 4),
-        "avg_predicted_reference_parameter": round(float(result["Predicted_Reference_Parameter"].mean()), 4),
+        "min_predicted_reference_parameter": round(
+            float(result["Predicted_Reference_Parameter"].min()), 4
+        ),
+        "max_predicted_reference_parameter": round(
+            float(result["Predicted_Reference_Parameter"].max()), 4
+        ),
+        "avg_predicted_reference_parameter": round(
+            float(result["Predicted_Reference_Parameter"].mean()), 4
+        ),
         "top_3_attention_test_ids": attention,
         "top_3_highest_predicted_parameter_ids": highest_risk,
         "feature_importance": {name: round(float(value), 6) for name, value in importance},
         "model_selection": {
-            "validation_design": "Repeated 5-fold shuffled CV, 3 repeats, random_state=42; regression used Valid rows only and classifier used stratified folds.",
+            "validation_design": (
+                "Repeated 5-fold shuffled CV, 3 repeats, random_state=42; "
+                "regression used Valid rows only and classifier used "
+                "stratified folds."
+            ),
             "duplicate_rows": "None detected; duplicate full rows and duplicate Test_ID values are rejected.",
             "missing_values": "Median imputation learned from training data; missingness indicators retained for validity classification.",
             "regression_selected": "GaussianProcessRegressor on seven features excluding Sensor_S4",
@@ -248,7 +263,8 @@ def export_artifacts(
             ],
         },
         "algorithmic_explanation": (
-            "A balanced supervised HistGradientBoosting classifier identifies invalid records while "
+            "A balanced supervised HistGradientBoosting classifier identifies "
+            "invalid records while "
             "retaining missingness indicators. Gaussian Process Regression is trained "
             "only on engineer-labelled valid records and supplies uncertainty for "
             "attention ranking. An XGBoost regressor is retained as an extrapolation "

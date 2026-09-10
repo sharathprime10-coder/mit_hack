@@ -22,7 +22,7 @@ flowchart TD
     D --> E[Training median imputation]
     E --> F[Missingness indicators]
     E --> G[Prepared feature matrix]
-    F --> H[XGBoost validity classifier]
+    F --> H[HistGradientBoosting validity classifier]
     G --> H
     H --> I[Valid / Invalid label]
     G --> J[Gaussian Process regressor]
@@ -50,7 +50,7 @@ flowchart LR
     B -->|Valid and Invalid| D
     C --> E[Gaussian Process regressor]
     C --> F[XGBoost fallback regressor]
-    D --> G[XGBoost validity classifier]
+    D --> G[HistGradientBoosting validity classifier]
 ```
 
 Regression is intentionally trained only from records labelled `Valid`.
