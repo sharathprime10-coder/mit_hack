@@ -9,45 +9,5 @@
     "TST-0178",
     "TST-0142"
   ],
-  "top_3_highest_predicted_parameter_ids": [
-    "TST-0047",
-    "TST-0107",
-    "TST-0084"
-  ],
-  "feature_importance": {
-    "Load_Current_A": 6.347991,
-    "Sensor_S2": 2.53479,
-    "Ambient_Temperature_C": 1.224001,
-    "Applied_Voltage_kV": 0.405628,
-    "Sensor_S1": 0.223178,
-    "Test_Duration_min": 0.122987,
-    "Sensor_S3": 0.065754
-  },
-  "model_selection": {
-    "validation_design": "Repeated 5-fold shuffled CV, 3 repeats, random_state=42; regression used Valid rows only and classifier used stratified folds.",
-    "duplicate_rows": "None detected; duplicate full rows and duplicate Test_ID values are rejected.",
-    "missing_values": "Median imputation learned from training data; missingness indicators retained for validity classification.",
-    "regression_selected": "GaussianProcessRegressor on seven features excluding Sensor_S4",
-    "regression_cv": {
-      "r2_mean": 0.9952,
-      "r2_std": 0.0009,
-      "mae_mean": 0.515,
-      "rmse_mean": 0.7366
-    },
-    "classifier_selected": "HistGradientBoostingClassifier",
-    "classifier_cv": {
-      "f1_mean": 0.9753,
-      "f1_std": 0.0064,
-      "balanced_accuracy_mean": 0.8698,
-      "roc_auc_mean": 0.95
-    },
-    "candidates": [
-      "GaussianProcessRegressor",
-      "XGBRegressor",
-      "ExtraTreesRegressor",
-      "RandomForestRegressor",
-      "HistGradientBoostingRegressor"
-    ]
-  },
   "algorithmic_explanation": "A balanced supervised HistGradientBoosting classifier identifies invalid records while retaining missingness indicators. Gaussian Process Regression is trained only on engineer-labelled valid records and supplies uncertainty for attention ranking. An XGBoost regressor is retained as an extrapolation guardrail. Repeated shuffled CV selected seven features and excluded Sensor_S4; tested physical features did not improve held-out error."
 }

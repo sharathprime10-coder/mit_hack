@@ -18,7 +18,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import shap
 import xgboost as xgb
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -190,19 +189,8 @@ def predict(
     return result
 
 
-def generate_shap(
-    fallback: xgb.XGBRegressor, test: pd.DataFrame, features: list[str]
-) -> list[tuple[str, float]]:
-    """Compute feature explanations for the tree-based regression guardrail."""
-    values = shap.TreeExplainer(fallback).shap_values(test[features])
-    if isinstance(values, list):
-        values = values[0]
-    mean_abs = np.abs(np.asarray(values)).mean(axis=0)
-    return sorted(zip(features, mean_abs), key=lambda item: -item[1])
-
-
 def export_artifacts(
-    result: pd.DataFrame, importance: list[tuple[str, float]], output_dir: Path
+    result: pd.DataFrame, output_dir: Path
 ) -> None:
     """Write the submission file and a compact audit summary."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -216,7 +204,6 @@ def export_artifacts(
     submission.to_csv(output_dir / "Anveshan.csv", index=False)
 
     attention = result.nlargest(3, "Attention_Score")["Test_ID"].tolist()
-    highest_risk = result.nlargest(3, "Predicted_Reference_Parameter")["Test_ID"].tolist()
     summary = {
         "total_records_analyzed": int(len(result)),
         "invalid_records_count": int(result["Validity_Label"].eq("Invalid").sum()),
@@ -230,38 +217,6 @@ def export_artifacts(
             float(result["Predicted_Reference_Parameter"].mean()), 4
         ),
         "top_3_attention_test_ids": attention,
-        "top_3_highest_predicted_parameter_ids": highest_risk,
-        "feature_importance": {name: round(float(value), 6) for name, value in importance},
-        "model_selection": {
-            "validation_design": (
-                "Repeated 5-fold shuffled CV, 3 repeats, random_state=42; "
-                "regression used Valid rows only and classifier used "
-                "stratified folds."
-            ),
-            "duplicate_rows": "None detected; duplicate full rows and duplicate Test_ID values are rejected.",
-            "missing_values": "Median imputation learned from training data; missingness indicators retained for validity classification.",
-            "regression_selected": "GaussianProcessRegressor on seven features excluding Sensor_S4",
-            "regression_cv": {
-                "r2_mean": 0.9952,
-                "r2_std": 0.0009,
-                "mae_mean": 0.5150,
-                "rmse_mean": 0.7366,
-            },
-            "classifier_selected": "HistGradientBoostingClassifier",
-            "classifier_cv": {
-                "f1_mean": 0.9753,
-                "f1_std": 0.0064,
-                "balanced_accuracy_mean": 0.8698,
-                "roc_auc_mean": 0.9500,
-            },
-            "candidates": [
-                "GaussianProcessRegressor",
-                "XGBRegressor",
-                "ExtraTreesRegressor",
-                "RandomForestRegressor",
-                "HistGradientBoostingRegressor",
-            ],
-        },
         "algorithmic_explanation": (
             "A balanced supervised HistGradientBoosting classifier identifies "
             "invalid records while "
@@ -295,8 +250,7 @@ def main() -> None:
     result = predict(
         test, classifier, gpr, fallback, scaler, classifier_features, features
     )
-    importance = generate_shap(fallback, result, features)
-    export_artifacts(result, importance, args.output_dir)
+    export_artifacts(result, args.output_dir)
     print(f"[done] wrote Anveshan.csv and summary.json to {args.output_dir}")
 
 

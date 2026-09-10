@@ -20,7 +20,7 @@ adds uncertainty so a reviewer can see which rows deserve attention.
   that the model knows the true physical state.
 - An XGBoost regressor is kept as a tree-based comparison and extrapolation
   guardrail. The final submission is `Anveshan.csv`; the evidence and
-  selection details are in `summary.json`.
+  algorithmic explanation and attention ranking are in `summary.json`.
 
 ## Run the workflow
 
@@ -50,8 +50,8 @@ python C:\path\to\mit_hack\pipeline.py --data-dir C:\path\to\mit_hack
 3. Trains the validity classifier on both valid and invalid labelled rows.
 4. Trains GPR and the XGBoost guardrail on engineer-labelled valid rows only.
 5. Writes one row per test record with the prediction and validity label.
-6. Stores uncertainty, attention IDs, high-prediction IDs, and model-selection
-   information in `summary.json`.
+6. Stores uncertainty, attention IDs, and the algorithmic explanation in
+   `summary.json`.
 
 The physical interpretation is deliberately modest: current is the strongest
 feature in the guardrail explanation, which is consistent with resistive
@@ -67,7 +67,7 @@ engineering review.
 | `training_data.csv` | Engineer-labelled historical records |
 | `test_data.csv` | Unlabelled records used for inference |
 | `Anveshan.csv` | Submission predictions |
-| `summary.json` | Counts, rankings, metrics, and model-selection record |
+| `summary.json` | Counts, attention ranking, and algorithmic explanation |
 | `methodology_note.md` | Short explanation of approach and assumptions |
 | `ARCHITECTURE.md` | Data flow, trust story, limitations, and future design |
 
