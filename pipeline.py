@@ -70,7 +70,7 @@ def load_data(data_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def choose_features(train: pd.DataFrame) -> list[str]:
-    """Drop S4 only when it has no measurable relationship to the target."""
+    """Keep Sensor_S4 only when validation shows useful signal."""
     valid = train.loc[train["Validity_Label"].eq("Valid")]
     correlation = valid["Sensor_S4"].corr(valid["Reference_Parameter"])
     if pd.isna(correlation) or abs(correlation) < 0.10:
@@ -106,7 +106,7 @@ def preprocess(
 def train_validity_classifier(
     train: pd.DataFrame, classifier_features: list[str]
 ) -> HistGradientBoostingClassifier:
-    """Train a balanced classifier, with missingness retained as a signal."""
+    """Train the validity model while retaining missingness as a signal."""
     x = train[classifier_features]
     y = train["Validity_Label"].eq("Valid").astype(int)
     model = HistGradientBoostingClassifier(
@@ -128,7 +128,7 @@ def train_validity_classifier(
 def train_regression(
     train: pd.DataFrame, features: list[str]
 ) -> tuple[GaussianProcessRegressor, xgb.XGBRegressor, StandardScaler]:
-    """Train GPR and a tree-based guardrail using engineer-labelled valid rows."""
+    """Train GPR and a tree-based guardrail on engineer-labelled valid rows."""
     valid = train.loc[train["Validity_Label"].eq("Valid")]
     x = valid[features]
     y = valid["Reference_Parameter"]
@@ -175,7 +175,7 @@ def predict(
     classifier_features: list[str],
     features: list[str],
 ) -> pd.DataFrame:
-    """Generate validity, prediction, uncertainty, and guardrail columns."""
+    """Add validity, prediction, uncertainty, and guardrail columns."""
     result = test.copy()
     result["Validity_Label"] = np.where(
         classifier.predict(result[classifier_features]) == 1, "Valid", "Invalid"
@@ -193,7 +193,7 @@ def predict(
 def generate_shap(
     fallback: xgb.XGBRegressor, test: pd.DataFrame, features: list[str]
 ) -> list[tuple[str, float]]:
-    """Compute model explanations for the physical regression guardrail."""
+    """Compute feature explanations for the tree-based regression guardrail."""
     values = shap.TreeExplainer(fallback).shap_values(test[features])
     if isinstance(values, list):
         values = values[0]
@@ -204,7 +204,7 @@ def generate_shap(
 def export_artifacts(
     result: pd.DataFrame, importance: list[tuple[str, float]], output_dir: Path
 ) -> None:
-    """Write the challenge submission and a judge-friendly audit summary."""
+    """Write the submission file and a compact audit summary."""
     output_dir.mkdir(parents=True, exist_ok=True)
     submission = result[
         ["Test_ID", "Predicted_Reference_Parameter", "Validity_Label"]

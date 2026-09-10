@@ -1,91 +1,78 @@
-# CPRI Data Challenge - Team Anveshan
+# Team Anveshan - Methodology Note
 
 ## 1. Approach
 
-The pipeline uses two supervised stages. First, it classifies each record as
-`Valid` or `Invalid`. Second, it predicts the Reference Parameter using only
-engineer-labelled valid training records. The train/test files are schema
-checked, duplicate full rows and duplicate `Test_ID` values are rejected, and
-missing numeric values are median-imputed from training data. Missingness
-indicators are retained for validity classification.
+We treated the task as a trust-validity-prediction pipeline. First, a
+class-balanced `HistGradientBoostingClassifier` estimates whether each record
+is `Valid` or `Invalid`. This uses engineer labels from both classes. Then a
+`GaussianProcessRegressor` (GPR) predicts `Reference_Parameter` using
+engineer-labelled valid rows only. The output includes GPR standard deviation,
+so a reviewer can separate an ordinary prediction from one needing attention.
+The classifier is a trust signal, not proof that a record is physically safe.
 
-Candidate regressors were compared using repeated, shuffled 5-fold
-cross-validation (three repeats, `random_state=42`) on the valid subset:
-GaussianProcessRegressor (GPR), XGBRegressor, ExtraTreesRegressor,
-RandomForestRegressor, and HistGradientBoostingRegressor. GPR using seven
-features (excluding Sensor_S4) was selected:
+We compared GPR, `XGBRegressor`, `ExtraTreesRegressor`,
+`RandomForestRegressor`, and `HistGradientBoostingRegressor` with repeated
+shuffled 5-fold cross-validation (three repeats, `random_state=42`). GPR on
+seven features, excluding `Sensor_S4`, was selected. Its CV results were R2
+**0.9952 +/- 0.0009**, MAE **0.5150**, and RMSE **0.7366**. The classifier
+results were F1 **0.9753 +/- 0.0064**, balanced accuracy **0.8698**, and ROC
+AUC **0.9500**. The final models were refit on all available labelled data.
 
-| Model | R2 | MAE | RMSE |
-|---|---:|---:|---:|
-| GPR | 0.9952 +/- 0.0009 | 0.5150 | 0.7366 |
-| XGBRegressor | 0.9935 +/- 0.0027 | 0.5313 | 0.8416 |
+## 2. Important parameters and physical interpretation
 
-ExtraTrees, RandomForest, and HistGradientBoosting were weaker. Adding
-Sensor_S4 or tested physical features (`I^2 * duration`, thermal gradient,
-sensor mean) did not improve held-out error. GPR also supplies predictive
-uncertainty, which drives attention ranking. XGBoost remains a tree-based
-extrapolation guardrail and supplies feature explanations.
+The predictors are `Applied_Voltage_kV`, `Load_Current_A`,
+`Ambient_Temperature_C`, `Test_Duration_min`, and `Sensor_S1` through
+`Sensor_S3`. Current is physically relevant because resistive heating scales
+with current squared. The sensor readings provide thermal context; voltage and
+duration describe loading; ambient temperature provides a baseline. `Sensor_S4`
+was excluded after the valid-record relationship and cross-validation checks
+showed no useful contribution. This is a modelling decision, not a claim that
+the sensor is intrinsically unimportant.
 
-For validity classification, repeated stratified 5-fold CV selected a balanced
-HistGradientBoostingClassifier over XGBoost, ExtraTrees, and RandomForest:
-F1 = 0.9753 +/- 0.0064, balanced accuracy = 0.8698, and ROC AUC = 0.9500.
-The final model is refit on all labelled rows.
+GPR uses standardized predictors, `normalize_y=True`, three optimizer
+restarts, and a constant-kernel/RBF/white-noise kernel. The XGBoost model uses
+300 trees, depth 4, learning rate 0.04, row and feature subsampling of 0.9,
+and serves as a tree-based comparison and extrapolation guardrail. The
+classifier uses 250 boosting iterations, 15 maximum leaf nodes, learning
+rate 0.05, L2 regularization 1.0, balanced class weights, and seed 42.
 
-## 2. Important Parameters
+## 3. Abnormal-data method
 
-The selected predictors are Applied_Voltage_kV, Load_Current_A,
-Ambient_Temperature_C, Test_Duration_min, Sensor_S1, Sensor_S2, and Sensor_S3.
-Load current is physically important because resistive heating scales with
-current squared. Sensor_S2 and Sensor_S1 capture terminal temperatures and
-thermal gradients; Sensor_S3 adds spatial context. Voltage and duration affect
-electrical and thermal loading, while ambient temperature sets the baseline.
-Sensor_S4 was excluded after valid-record correlation and cross-validation
-checks showed no useful predictive contribution.
+The classifier learns nonlinear combinations rather than declaring every
+large value abnormal. For example, a high temperature can be consistent with
+high current and long duration, while a sensor spike, missing critical
+measurement, or inconsistent combination can lower validity. Numeric gaps are
+filled with medians learned from training data; missingness indicators are
+retained for classification because the gap itself may be informative.
+Invalid labelled rows are not used to fit the physical regression. The
+pipeline rejects missing required columns, unknown labels, duplicate rows, and
+duplicate `Test_ID` values before training.
 
-## 3. Abnormal-Data Method
+## 4. Assumptions and limitations
 
-The supervised classifier learns nonlinear conditional relationships rather
-than treating every extreme reading as anomalous. Thus, high temperatures can
-remain valid when supported by high current or long duration, while sensor
-spikes, missing critical measurements, and physically inconsistent combinations
-can be flagged as invalid. The model is class-balanced because invalid labels
-are the minority class. Regression is never trained on invalid labelled rows.
+We assume engineer labels and reference parameters are reliable, trials are
+independent, the relationship is reasonably stationary between campaigns,
+and the selected electrical and thermal variables contain the useful signal.
+No temporal or equipment grouping is available, so the reported CV is not a
+time-forward or machine-held-out test. Median imputation is a baseline, not a
+replacement for recovering a failed measurement. The model has no equipment
+limit and should not be used alone for a safety decision. On the current run,
+350 test records were processed and 31 were classified as invalid.
 
-## 4. Assumptions
+## 5. Digital-twin steps
 
-1. Engineer-provided validity labels and reference parameters are trusted.
-2. The physical relationship is sufficiently stationary between historical and
-   test campaigns.
-3. Records are independent trials; no temporal grouping is available.
-4. Missing values are measurement gaps, and training medians are a safe
-   baseline for imputation.
-5. The selected electrical and thermal variables contain the relevant signal;
-   Sensor_S4 is treated as auxiliary noise.
+The following is a future deployment plan, not part of the submitted batch
+run:
 
-## 5. Digital-Twin Steps
-
-1. **Ingest:** stream sensor records through MQTT or OPC-UA into a durable
-   broker such as Google Pub/Sub or AWS IoT.
-2. **Preprocess:** align timestamps, validate ranges, apply training-derived
-   imputation, and compute approved derived variables if later validated.
-3. **Validity service:** classify records as Valid or Invalid.
-4. **Regression service:** predict the Reference Parameter for each record and
-   return the GPR uncertainty.
-5. **Monitor:** alert on invalid status, high prediction uncertainty, or a
-   predicted parameter above the equipment limit; persist results for trends.
-
-## 6. Reproducibility and Setup
-
-Dependencies are pinned in `requirements.txt` (NumPy 2.5.2, pandas 3.0.5,
-scikit-learn 1.9.0, XGBoost 3.4.1, and SHAP 0.52.0). From PowerShell:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python pipeline.py
-```
-
-The pipeline reads `training_data.csv` and `test_data.csv` and writes the
-official `Anveshan.csv` and `summary.json`. The submission ZIP contains
-`Anveshan.csv`, `summary.json`, `pipeline.py`, and this methodology note.
+1. **Ingest:** receive timestamped sensor records through an approved broker
+   or plant interface.
+2. **Prepare:** align timestamps, check ranges and schema, apply the
+   training-derived preprocessing, and compute only physically validated
+   derived variables.
+3. **Assess validity:** return the classifier label and retain the reason
+   signals available for review.
+4. **Predict:** return the GPR estimate, uncertainty, and the XGBoost
+   comparison.
+5. **Review and learn:** route invalid or high-uncertainty records to an
+   engineer, persist outcomes, and recalibrate only after new labelled data
+   passes a documented validation process.
